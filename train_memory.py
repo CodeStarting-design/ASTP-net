@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import autocast, GradScaler
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,Dataset
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import sys
@@ -17,7 +17,7 @@ rootPath = os.path.split(curPath)[0]
 sys.path.append(rootPath)
 
 from utils import AverageMeter
-from dataset.dataloader import DehazeDataset
+from dataset.dataloader import DehazeDataset,DehazeDataset_mem
 from models import *
 
 
@@ -118,16 +118,15 @@ if __name__ == '__main__':
     dataset_dir = os.path.join(args.data_dir, args.dataset)
     testdataset_dir = os.path.join(args.data_dir, args.testdataset)
     
-
-    train_dataset = DehazeDataset(dataset_dir,'train', 'train',  
+    train_dataset = DehazeDataset_mem(dataset_dir,'train', 'train',  
                               setting['width'],setting['height'],frames_num=frames_num)
-    train_loader = DataLoader(train_dataset, 
-                            batch_size=setting['batch_size'], 
+    train_loader = DataLoader(train_dataset,
+                            batch_size=setting['batch_size'],
                             shuffle=True,
                             num_workers=3,
                             pin_memory=True,
                             drop_last=True)
-    val_dataset = DehazeDataset(testdataset_dir, 'test', setting['valid_mode'], 
+    val_dataset = DehazeDataset_mem(testdataset_dir, 'test', setting['valid_mode'], 
                               setting['width'],setting['height'],frames_num=frames_num)
     val_loader = DataLoader(val_dataset,
                             batch_size=40,

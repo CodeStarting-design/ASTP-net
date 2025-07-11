@@ -36,6 +36,7 @@ class ASTP(nn.Module): # 最终的输出依旧是单张图片的去雾结果
         # setting
         self.patch_size = 4
         self.mlp_ratios = mlp_ratios
+        self.frames_num = frames_num
 
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
@@ -145,7 +146,7 @@ class ASTP(nn.Module): # 最终的输出依旧是单张图片的去雾结果
         feat,qloos = self.forward_features(x)
         K, B = torch.split(feat, (1, 3), dim=1)
 
-        x=x.view(b,t,c,H,W)[:,1,:,:,:]
+        x=x.view(b,t,c,H,W)[:,self.frames_num//2,:,:,:]
         x=x.view(b,c,H,W)
         x = K * x - B + x
         x = x[:, :, :h, :w]

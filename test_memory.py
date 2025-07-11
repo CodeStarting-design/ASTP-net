@@ -34,8 +34,6 @@ args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-frames_num = 3  # Number of frames to be processed together
-
 def single(save_dir):
     state_dict = torch.load(save_dir)['state_dict']
     new_state_dict = OrderedDict()
@@ -129,7 +127,7 @@ if __name__ == '__main__':
         exit(0)
 
     dataset_dir = os.path.join(args.data_dir, args.dataset)
-    test_dataset = DehazeDataset(dataset_dir,'test', 'test',frames_num=frames_num)
+    test_dataset = DehazeDataset(dataset_dir,'test', 'test')
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              pin_memory=True)

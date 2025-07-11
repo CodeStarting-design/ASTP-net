@@ -58,12 +58,13 @@ def align(imgs=[], width=500,height=500):
     return imgs
 
 class DehazeDataset(Dataset):
-    def __init__(self, data_dir,sub_dir,mode,width=500,height=500, edge_decay=0, only_h_flip=False): # 每次需要取出的是三帧，在数据集读取时将连续三帧的文件路径直接保存
+    def __init__(self, data_dir,sub_dir,mode,width=500,height=500, edge_decay=0, only_h_flip=False,frames_num=3): # 每次需要取出的是三帧，在数据集读取时将连续三帧的文件路径直接保存
         
         self.root_dir = os.path.join(data_dir,sub_dir)
         self.width = width
         self.height = height 
         self.edge_decay = edge_decay
+        self.frames_num=frames_num
         self.only_h_flip = only_h_flip
         self.mode=mode
 
@@ -83,10 +84,10 @@ class DehazeDataset(Dataset):
                 gt_video_path = os.path.join(gt_scene_path, video_folder)
                 frame_files_hazy = sorted(os.listdir(hazy_video_path)) # 在文件夹中的每一帧
                 frame_files_gt = sorted(os.listdir(gt_video_path))
-                for j in range(len(frame_files_hazy)-2):
+                for j in range(len(frame_files_hazy)-self.frames_num+1): # 每次取出连续的三帧
                     frame_hazy_path=[]
                     frame_gt_path=[]
-                    for k in range(3):
+                    for k in range(self.frames_num):
                         try:
                             frame_hazy_path.append(os.path.join(hazy_video_path,frame_files_hazy[j+k]))
                             frame_gt_path.append(os.path.join(gt_video_path,frame_files_gt[j+k]))
@@ -148,6 +149,62 @@ class DehazeDataset(Dataset):
             return input_frames,target_frames,result_path
         return input_frames,target_frames
         
+class DehazeDataset_mem(Dataset):
+    def __init__(self, data_dir, sub_dir, mode, width=500, height=500, 
+                 edge_decay=0, only_h_flip=False, frames_num=3, num_samples=10000):
+        """
+        修改后的初始化方法，不再从文件读取数据
+        num_samples: 指定生成的随机样本数量
+        """
+        self.width = width
+        self.height = height 
+        self.edge_decay = edge_decay
+        self.frames_num = frames_num
+        self.only_h_flip = only_h_flip
+        self.mode = mode
+        self.num_samples = num_samples  # 随机生成的样本数量
+
+        # 不再需要文件路径列表
+        self.transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+
+    def __len__(self):
+        return self.num_samples  # 返回预设的样本数量
+
+    def __getitem__(self, idx):
+        """
+        生成随机数据替代文件读取
+        每帧生成 (3, height, width) 的张量，然后堆叠为 (frames_num, 3, height, width)
+        """
+        # 生成随机输入帧 (有雾图像)
+        input_frames = torch.rand(self.frames_num, 3, self.height, self.width) * 2 - 1  # [-1,1]范围
+        
+        # 生成随机目标帧 (清晰图像)
+        target_frames = torch.rand(self.frames_num, 3, self.height, self.width) * 2 - 1  # [-1,1]范围
+        
+        # 构建虚拟路径（保持test模式兼容）
+        result_path = f"random_sample_{idx}"
+
+        # 处理不同模式
+        if self.mode == 'train':
+            input_frames, target_frames = augment(
+                [input_frames, target_frames], 
+                self.width, self.height, 
+                self.edge_decay, self.only_h_flip
+            )
+        
+        elif self.mode == 'valid':
+            input_frames, target_frames = align(
+                [input_frames, target_frames], 
+                self.width, self.height
+            )
+        
+        if self.mode == 'test':
+            return input_frames, target_frames, result_path
+        
+        return input_frames, target_frames
+
 
 # train_dataset = DehazeDataset('../data/HazeWorld/','train', 'train')
 # print(len(train_dataset))

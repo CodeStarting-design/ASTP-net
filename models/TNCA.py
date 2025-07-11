@@ -102,10 +102,10 @@ class TNCA_Block(nn.Module):
         # 先对相邻帧特征进行处理
         b,c,h,w=x.size()
         x_n=x
-        x=x.view(b, 3, c//3, h, w)
-        x_t = x[:, 1, :, :, :] # 取出第2帧也就是当前帧
+        x=x.view(b, self.frames_num, c//self.frames_num, h, w)
+        x_t = x[:, self.frames_num//2, :, :, :] # 取出当前帧
         x_t=self.norm(x_t) # 维度是B，C，H，W
-        x_n=x_n.view(b*3,c//3,h,w)
+        x_n=x_n.view(b*self.frames_num,c//self.frames_num,h,w)
         x_n=self.norm(x_n)
         x_n=x_n.view(b, c, h, w).contiguous()
 
