@@ -36,7 +36,7 @@ args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-frames_num = 3  # Number of frames to be processed together
+frames_num = 2  # Number of frames to be processed together
 
 def train(train_loader, network, criterion, optimizer, scaler,epoch,changeEpoch=30):
     losses = AverageMeter()
@@ -48,7 +48,7 @@ def train(train_loader, network, criterion, optimizer, scaler,epoch,changeEpoch=
     for batch in train_loader:
         inputs, targets = batch
         b,_,c,h,w=targets.size()
-        target=targets[:,1,:,:,:].view(b,c,h,w).cuda()
+        target=targets[:,frames_num//2,:,:,:].view(b,c,h,w).cuda()
         inputs=inputs.cuda()
         with autocast(args.no_autocast):
             output,qloss = network(inputs)
@@ -77,7 +77,7 @@ def valid(val_loader, network):
     for batch in val_loader:
         inputs, targets = batch
         b,_,c,h,w=targets.size()
-        target=targets[:,1,:,:,:].view(b,c,h,w).cuda()
+        target=targets[:,frames_num//2,:,:,:].view(b,c,h,w).cuda()
         inputs=inputs.cuda()
 
         with torch.no_grad():							# torch.no_grad() may cause warning
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     with open(setting_filename, 'r') as f:
         setting = json.load(f)
 
-    network = eval(args.model.replace('-', '_'))()
+    network = eval(args.model.replace('-', '_'))(frames_num=frames_num)
     network = nn.DataParallel(network).cuda()
 
     criterion = nn.L1Loss()

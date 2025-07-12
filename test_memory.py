@@ -14,7 +14,7 @@ curPath = os.path.abspath(os.path.dirname(__file__))
 rootPath = os.path.split(curPath)[0]
 sys.path.append(rootPath)
 
-from dataset.dataloader import DehazeDataset
+from dataset.dataloader import DehazeDataset,DehazeDataset_mem
 from models import *
 
 from utils import AverageMeter, write_img, chw_to_hwc
@@ -33,6 +33,8 @@ parser.add_argument('--gpu', default='0', type=str, help='GPUs used for training
 args = parser.parse_args()
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+
+frames_num = 2  # Number of frames to be processed together
 
 def single(save_dir):
     state_dict = torch.load(save_dir)['state_dict']
@@ -62,7 +64,7 @@ def test(test_loader, network, result_dir):
 
         inputs, targets, res_dir = batch
         b,_,c,h,w=targets.size()
-        target=targets[:,1,:,:,:].view(b,c,h,w).cuda()
+        target=targets[:,frames_num//2,:,:,:].view(b,c,h,w).cuda()
         target=target.half()
         inputs=inputs.cuda()
         inputs=inputs.half()
@@ -113,7 +115,7 @@ if __name__ == '__main__':
         setting_filename = os.path.join('configs', args.exp, 'default.json')
     with open(setting_filename, 'r') as f:
         setting = json.load(f)
-    network = eval(args.model.replace('-', '_'))()
+    network = eval(args.model.replace('-', '_'))(frames_num=frames_num)
     network.half()
     network = nn.DataParallel(network).cuda()
     saved_model_dir = os.path.join(args.save_dir, args.exp, args.model+'.pth')
@@ -127,7 +129,9 @@ if __name__ == '__main__':
         exit(0)
 
     dataset_dir = os.path.join(args.data_dir, args.dataset)
-    test_dataset = DehazeDataset(dataset_dir,'test', 'test')
+    test_dataset = DehazeDataset_mem(dataset_dir,'test', 'test',
+                                     width=1280,height=720,
+                                     frames_num=frames_num)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              pin_memory=True)

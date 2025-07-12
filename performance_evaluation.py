@@ -3,9 +3,11 @@ from models import *
 from torch_flops import TorchFLOPsByFX
 
 
-net  = ASTP_s()  # 定义好的网络模型
+frames_num = 2  # Number of frames to be processed together
 
-input_tensor = torch.randn(1, 3, 3, 256, 256) 
+net  = ASTP_s(frames_num=frames_num)  # 定义好的网络模型
+
+input_tensor = torch.randn(1, frames_num, 3, 256, 256) 
 
 flops_counter = TorchFLOPsByFX(net)
     # flops_counter.graph_model.graph.print_tabular()

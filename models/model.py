@@ -171,7 +171,7 @@ def ASTP_t():
         frames_num=3)
 
 
-def ASTP_s():
+def ASTP_s(frames_num=3):
     return ASTP(
 		embed_dims=[24, 48, 96, 48, 24],
 		mlp_ratios=[2., 4., 4., 2., 2.],
@@ -187,7 +187,7 @@ def ASTP_s():
             [1, 1, 1, 1]
          ],
         kernel_sizes=[13,13,11,0,0],
-        frames_num=3)
+        frames_num=frames_num)
 
 
 def ASTP_b():
